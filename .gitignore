@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+*.venv
+env/
+venv/
+ENV/
+.Python
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Virtual environments
+*.env/
+*.venv/
+env/
+venv/
+
+# Flask/Misc
+instance/
+*.sqlite3
+*.db
+
+# Node
+node_modules/
+
+# Static build artifacts
+/static/*.map
+
+# Test/coverage
+.coverage
+htmlcov/
+*.cover
+*.pyc
+
+# Other
+*.bak
+
+visited.txt
