@@ -60,9 +60,6 @@ def get_articles(request: Request, db: DbManager = Depends(get_db)):
     } for article in articles]
 
 
-
-
-
 connected_websockets: list[WebSocket] = []
 @app.websocket("/ws/notifications")
 async def websocket_endpoint(websocket: WebSocket):

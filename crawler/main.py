@@ -19,7 +19,7 @@ async def job():
         success = db.add_article(article)
         if success:
             try:
-                requests.post('http://0.0.0.0:8000', headers={'title': title})
+                requests.post('http://0.0.0.0:8000/article', headers={'title': title})
             except Exception as e:
                 print(e)
             print('article saved to db:', title)
