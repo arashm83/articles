@@ -18,7 +18,10 @@ async def job():
         article = Article(title=title, abstract=abstract, url=url, pdf_url=pdf_url, create_at=datetime.now(timezone.utc))
         success = db.add_article(article)
         if success:
-            requests.post('http://127.0.0.1:8000/article', headers={'title': title})
+            try:
+                requests.post('http://0.0.0.0:8000', headers={'title': title})
+            except Exception as e:
+                print(e)
             print('article saved to db:', title)
             with open('visited.txt', 'a') as f:
                 f.write(url + '\n')
