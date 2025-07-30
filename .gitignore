@@ -29,7 +29,6 @@ venv/
 # Flask/Misc
 instance/
 *.sqlite3
-*.db
 
 # Node
 node_modules/
