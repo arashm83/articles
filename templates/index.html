@@ -99,6 +99,43 @@
     <div id="notification"></div>
 
     <script>
+        
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+      const raw = atob(base64);
+      return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
+    }
+
+    async function registerPush() {
+      try {
+        const {publicKey} = await fetch('/vapid_public_key').then(r => r.json());
+        const reg = await navigator.serviceWorker.register('/statics/sw.js');
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') throw new Error('Permission denied');
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+        await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sub)
+        });
+        console.log('Subscribed!');
+      } catch (err) {
+        console.error('Push registration failed:', err);
+      }
+    }
+
+    // loading
+    window.addEventListener('load', () => {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        registerPush();
+      }
+
         // Fetch and display articles
         fetch("/api/articles")
             .then(response => response.json())
@@ -142,6 +179,8 @@
                 notif.style.display = "none";
             }, 5000);
         };
+    });
+
     </script>
 </body>
 </html>

@@ -1,15 +1,26 @@
 from fastapi import FastAPI, WebSocket, Request, Form, Depends, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, RedirectResponse
+from pydantic import BaseModel
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from cores.auth import decode_token, create_access_token, verify_password
 from cores.db_manager import DbManager, User, engine, Base, get_db
+from pywebpush import webpush, WebPushException
+import json
+
+
+VAPID_PUBLIC_KEY = "BI1V3C0CTLDDu7fLwhPEzsjWrcOQ8BQwX6ITxV9GJ3JJLQgMtId9lAJiePykec4lnHo5KlS69MuSt598_d25QWE"
+VAPID_PRIVATE_KEY = "OVdH4Z4-wZQtN9EuWINF1p1HVCBw7_J8CzmfcXGBTJ4"
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
 app.mount('/statics', StaticFiles(directory='statics'), name='statics')
+
+class Subscription(BaseModel):
+    endpoint: str
+    keys: dict
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -59,8 +70,20 @@ def get_articles(request: Request, db: DbManager = Depends(get_db)):
         "created_at": article.create_at.isoformat(),
     } for article in articles]
 
+@app.get("/vapid_public_key")
+def get_vapid_public_key():
+    return {"publicKey": VAPID_PUBLIC_KEY}
+
+@app.post("/api/subscribe")
+def subscribe(subscription: Subscription):
+    sub = subscription.model_dump()
+    if sub not in subscriptions:
+        subscriptions.append(sub)
+    return {"status": "subscribed"}
+
 
 connected_websockets: list[WebSocket] = []
+subscriptions = []
 @app.websocket("/ws/notifications")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -72,12 +95,28 @@ async def websocket_endpoint(websocket: WebSocket):
         connected_websockets.remove(websocket)
 
 async def notify_new_article(connected_websockets, title: str):
-    print(connected_websockets)
     for ws in connected_websockets:
         try:
             await ws.send_text(f"new article : {title}")
         except:
             pass
+
+    payload = {
+        "title": "new article posted",
+        "body": title
+    }
+
+    for sub in subscriptions:
+        try:
+            webpush(
+                subscription_info=sub,
+                data=json.dumps(payload),
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": 'mailto:example@example.com'}
+            )
+        except WebPushException as e:
+            print("push failed: ", e)
+
 
 
 @app.post('/article')
